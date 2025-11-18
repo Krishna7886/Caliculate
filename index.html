@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Instant Live Calculator</title>
+    <style>
+        /* CSS - Styling the interface */
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f0f2f5;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            padding: 20px;
+        }
+
+        .card {
+            background: white;
+            padding: 2rem;
+            border-radius: 15px;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+            width: 100%;
+            max-width: 450px;
+        }
+
+        h2 {
+            text-align: center;
+            color: #333;
+            margin-bottom: 1.5rem;
+            margin-top: 0;
+        }
+
+        .input-group {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+
+        label {
+            font-size: 0.9rem;
+            color: #666;
+            font-weight: bold;
+        }
+
+        /* Input styling */
+        input[type="text"] {
+            padding: 15px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            font-size: 1.2rem;
+            outline: none;
+            transition: border-color 0.3s, box-shadow 0.3s;
+            width: 100%;
+            box-sizing: border-box;
+            /* Ensures padding doesn't break width */
+        }
+
+        input[type="text"]:focus {
+            border-color: #6c5ce7;
+            box-shadow: 0 0 8px rgba(108, 92, 231, 0.2);
+        }
+
+        /* Results Section */
+        .results-container {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            margin-top: 10px;
+            border-top: 2px solid #f0f0f0;
+            padding-top: 20px;
+            opacity: 0;
+            /* Hidden initially */
+            transition: opacity 0.3s ease;
+        }
+
+        .results-container.active {
+            opacity: 1;
+            /* Visible when typing */
+        }
+
+        .result-box {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background-color: #f8f9fa;
+            padding: 12px 15px;
+            border-radius: 8px;
+            border-left: 5px solid #ccc;
+        }
+
+        .result-label {
+            font-size: 0.85rem;
+            color: #555;
+            font-weight: 600;
+        }
+
+        .result-value {
+            font-size: 1.1rem;
+            font-weight: bold;
+            color: #333;
+        }
+
+        .error-text {
+            color: #e74c3c;
+            font-size: 0.8rem;
+            height: 15px;
+            /* Reserve space */
+            margin-top: 5px;
+        }
+
+        /* Colors for the bars */
+        .bar-sum {
+            border-left-color: #00b894;
+        }
+
+        /* Green */
+        .bar-split {
+            border-left-color: #fdcb6e;
+        }
+
+        /* Yellow */
+        .bar-total {
+            border-left-color: #6c5ce7;
+        }
+
+        /* Purple */
+    </style>
+</head>
+
+<body>
+    <div class="card">
+        <h2>Live Calculator</h2>
+        <div class="input-group">
+            <label for="liveInput">Start typing numbers (e.g. 1000+2000)</label>
+            <!-- oninput triggers the function immediately when typing -->
+            <input type="text" id="liveInput" placeholder="0" oninput="calculateLive()" autocomplete="off">
+            <div id="statusMsg" class="error-text"></div>
+        </div>
+        <div id="results" class="results-container">
+            <!-- 1. Base Sum -->
+            <div class="result-box bar-sum">
+                <span class="result-label">Total Sum</span>
+                <span class="result-value" id="resSum">0.00</span>
+            </div>
+            <!-- 2. First Split -->
+            <div class="result-box bar-split">
+                <span class="result-label">18% Split (1)</span>
+                <span class="result-value" id="resSplit1">0.00</span>
+            </div>
+            <!-- 3. Second Split -->
+            <div class="result-box bar-split">
+                <span class="result-label">18% Split (2)</span>
+                <span class="result-value" id="resSplit2">0.00</span>
+            </div>
+            <!-- 4. Final Total -->
+            <div class="result-box bar-total">
+                <span class="result-label">Grand Total</span>
+                <span class="result-value" id="resFinal">0.00</span>
+            </div>
+        </div>
+    </div>
+    <script>
+        function calculateLive() {
+            const inputField = document.getElementById('liveInput');
+            const statusMsg = document.getElementById('statusMsg');
+            const resultsContainer = document.getElementById('results');
+
+            let expression = inputField.value.trim();
+
+            // 1. If input is empty, clear results and hide
+            if (expression === "") {
+                resultsContainer.classList.remove('active');
+                statusMsg.innerText = "";
+                return;
+            }
+
+            // 2. Validate characters (Only numbers and math operators allowed)
+            const validPattern = /^[0-9+\-*/.()\s]+$/;
+            if (!validPattern.test(expression)) {
+                statusMsg.innerText = "Invalid character entered";
+                return;
+            } else {
+                statusMsg.innerText = ""; // Clear error
+            }
+
+            try {
+                // 3. Attempt to calculate
+                // We use 'new Function' to evaluate the math string
+                const sum = new Function('return ' + expression)();
+
+                // If the calculation result is not a number (e.g. user typed "200+")
+                // or is Infinity (divided by zero), do not update UI yet.
+                if (!isFinite(sum) || isNaN(sum)) {
+                    return;
+                }
+
+                // 4. Perform the Split Logic
+                const halfTax = (sum * 0.18) / 2;
+                const finalTotal = sum + halfTax + halfTax;
+
+                // 5. Update the UI
+                updateValue('resSum', sum);
+                updateValue('resSplit1', halfTax);
+                updateValue('resSplit2', halfTax);
+                updateValue('resFinal', finalTotal);
+
+                // Make results visible
+                resultsContainer.classList.add('active');
+
+            } catch (e) {
+                // If syntax is incomplete (e.g. "200+"), catch the error 
+                // and do nothing (wait for user to finish typing).
+            }
+        }
+
+        // Helper function to format currency/numbers nicely
+        function updateValue(elementId, value) {
+            document.getElementById(elementId).innerText =
+                value.toLocaleString(undefined, {
+                    minimumFractionDigits: 2,
+                    maximumFractionDigits: 2
+                });
+        }
+    </script>
+</body>
+
+</html>
