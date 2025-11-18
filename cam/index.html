@@ -1,0 +1,455 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Vision Calculator</title>
+    <!-- Tesseract JS for Image Reading -->
+    <script src='https://unpkg.com/tesseract.js@v2.1.0/dist/tesseract.min.js'></script>
+    <style>
+        /* CSS - Modern Design */
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #eef2f7;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            padding: 20px;
+        }
+
+        .card {
+            background: white;
+            padding: 0;
+            border-radius: 15px;
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.1);
+            width: 100%;
+            max-width: 500px;
+            overflow: hidden;
+            position: relative;
+        }
+
+        /* Tabs */
+        .tabs {
+            display: flex;
+            background-color: #f1f3f4;
+            border-bottom: 1px solid #ddd;
+        }
+
+        .tab-btn {
+            flex: 1;
+            padding: 15px;
+            border: none;
+            background: none;
+            cursor: pointer;
+            font-weight: bold;
+            font-size: 1rem;
+            color: #666;
+            outline: none;
+        }
+
+        .tab-btn.active {
+            background: white;
+            color: #6c5ce7;
+            border-bottom: 3px solid #6c5ce7;
+        }
+
+        .content-section {
+            display: none;
+            padding: 2rem;
+            animation: fadeIn 0.3s ease-in-out;
+        }
+
+        .content-section.active {
+            display: block;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(5px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        h2 {
+            text-align: center;
+            color: #333;
+            margin-top: 0;
+            margin-bottom: 20px;
+        }
+
+        .input-group {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            margin-bottom: 15px;
+        }
+
+        label {
+            font-size: 0.9rem;
+            color: #555;
+            font-weight: 600;
+        }
+
+        input[type="text"],
+        input[type="number"] {
+            padding: 14px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            font-size: 1.1rem;
+            outline: none;
+            width: 100%;
+            box-sizing: border-box;
+            transition: border-color 0.3s;
+        }
+
+        input:focus {
+            border-color: #6c5ce7;
+        }
+
+        /* Buttons */
+        button.action-btn {
+            background-color: #6c5ce7;
+            color: white;
+            border: none;
+            padding: 14px;
+            border-radius: 8px;
+            font-size: 1rem;
+            cursor: pointer;
+            font-weight: bold;
+            width: 100%;
+            margin-top: 10px;
+            transition: background-color 0.3s;
+        }
+
+        button.action-btn:hover {
+            background-color: #5b4bc4;
+        }
+
+        /* Camera Button Specifics */
+        .cam-btn {
+            background-color: #2d3436;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .cam-btn:hover {
+            background-color: #000;
+        }
+
+        /* Results */
+        .result-box {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background-color: #f8f9fa;
+            padding: 12px 15px;
+            margin-bottom: 10px;
+            border-radius: 8px;
+            border-left: 5px solid #ccc;
+        }
+
+        .result-label {
+            font-size: 0.85rem;
+            color: #555;
+            font-weight: 600;
+        }
+
+        .result-value {
+            font-size: 1.1rem;
+            font-weight: bold;
+            color: #333;
+        }
+
+        .bar-sum {
+            border-left-color: #00b894;
+        }
+
+        .bar-split {
+            border-left-color: #fdcb6e;
+        }
+
+        .bar-total {
+            border-left-color: #6c5ce7;
+        }
+
+        /* Loader Overlay */
+        .overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(255, 255, 255, 0.9);
+            display: none;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 10;
+        }
+
+        .spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #6c5ce7;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% {
+                transform: rotate(0deg);
+            }
+
+            100% {
+                transform: rotate(360deg);
+            }
+        }
+
+        .loading-text {
+            margin-top: 15px;
+            color: #333;
+            font-weight: bold;
+        }
+
+        /* AI Output Box */
+        .ai-output {
+            margin-top: 20px;
+            background-color: #2d3436;
+            color: #00b894;
+            padding: 15px;
+            border-radius: 8px;
+            font-family: monospace;
+            font-size: 1rem;
+            word-break: break-word;
+            display: none;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="card">
+        <!-- Loading Overlay -->
+        <div id="loader" class="overlay">
+            <div class="spinner"></div>
+            <div class="loading-text" id="loaderText">AI Vision Processing...</div>
+        </div>
+        <!-- Tabs -->
+        <div class="tabs">
+            <button class="tab-btn active" onclick="switchTab('standard')">Calculator</button>
+            <button class="tab-btn" onclick="switchTab('reverse')">Reverse AI</button>
+        </div>
+        <!-- Tab 1: Standard + Camera -->
+        <div id="standard" class="content-section active">
+            <h2>Standard & Camera</h2>
+            <div class="input-group">
+                <!-- Hidden File Input -->
+                <input type="file" id="imgInput" accept="image/*" capture="environment" style="display:none"
+                    onchange="processImage(this)">
+                <button class="action-btn cam-btn" onclick="document.getElementById('imgInput').click()">
+                    <span>📸</span> Scan / Upload Image </button>
+            </div>
+            <div class="input-group">
+                <label>Input (Edit manually if needed)</label>
+                <input type="text" id="liveInput" placeholder="Type or scan..." oninput="calculateLive()"
+                    autocomplete="off">
+            </div>
+            <div id="liveResults" style="display:none;">
+                <div class="result-box bar-sum">
+                    <span class="result-label">Total Sum</span>
+                    <span class="result-value" id="resSum">0.00</span>
+                </div>
+                <div class="result-box bar-split">
+                    <span class="result-label">18% Split (1)</span>
+                    <span class="result-value" id="resSplit1">0.00</span>
+                </div>
+                <div class="result-box bar-split">
+                    <span class="result-label">18% Split (2)</span>
+                    <span class="result-value" id="resSplit2">0.00</span>
+                </div>
+                <div class="result-box bar-total">
+                    <span class="result-label">Grand Total</span>
+                    <span class="result-value" id="resFinal">0.00</span>
+                </div>
+            </div>
+        </div>
+        <!-- Tab 2: Reverse AI Generator -->
+        <div id="reverse" class="content-section">
+            <h2>Reverse Generator</h2>
+            <div class="input-group">
+                <label>Target Grand Total</label>
+                <input type="text" id="targetTotal" placeholder="e.g. 38527">
+            </div>
+            <div class="input-group">
+                <label>Count (Quantity)</label>
+                <input type="number" id="targetCount" placeholder="e.g. 13">
+            </div>
+            <button class="action-btn" onclick="generateReverseAI()">Generate List</button>
+            <div id="aiResultBox" class="ai-output">
+                <div id="aiOutputText"></div>
+            </div>
+        </div>
+    </div>
+    <script>
+        // --- TAB SWITCHING ---
+        function switchTab(tabName) {
+            document.querySelectorAll('.content-section').forEach(el => el.classList.remove('active'));
+            document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
+            document.getElementById(tabName).classList.add('active');
+            const btns = document.querySelectorAll('.tab-btn');
+            if (tabName === 'standard') btns[0].classList.add('active');
+            else btns[1].classList.add('active');
+        }
+
+        // --- IMAGE PROCESSING (OCR) ---
+        function processImage(input) {
+            if (input.files && input.files[0]) {
+                const file = input.files[0];
+
+                // Show Loader
+                const loader = document.getElementById('loader');
+                const loaderText = document.getElementById('loaderText');
+                loader.style.display = 'flex';
+                loaderText.innerText = "Initializing AI Vision...";
+
+                Tesseract.recognize(
+                    file,
+                    'eng',
+                    {
+                        logger: m => {
+                            if (m.status === 'recognizing text') {
+                                loaderText.innerText = `Scanning: ${Math.round(m.progress * 100)}%`;
+                            }
+                        }
+                    }
+                ).then(({ data: { text } }) => {
+                    loader.style.display = 'none';
+                    parseOCRToInput(text);
+                }).catch(err => {
+                    loader.style.display = 'none';
+                    alert("Error reading image: " + err);
+                });
+            }
+        }
+
+        function parseOCRToInput(text) {
+            // 1. Extract numbers (handles commas and decimals)
+            // Regex looks for numbers like 1,000.50 or 500
+            const matches = text.match(/[0-9]{1,3}(?:,[0-9]{3})*(?:\.[0-9]+)?|[0-9]+/g);
+
+            if (!matches) {
+                alert("No numbers found in the image.");
+                return;
+            }
+
+            // 2. Filter and clean
+            const cleanedNumbers = matches.map(num => {
+                // Remove commas to make it math-friendly
+                return num.replace(/,/g, '');
+            }).filter(n => {
+                // Filter out very small numbers (likely line numbers or noise) if needed
+                // keeping it simple for now:
+                return !isNaN(parseFloat(n));
+            });
+
+            // 3. Join with '+'
+            const expression = cleanedNumbers.join('+');
+
+            // 4. Put in input and calculate
+            const inputField = document.getElementById('liveInput');
+            inputField.value = expression;
+            calculateLive(); // Trigger calculation
+        }
+
+        // --- STANDARD CALCULATOR LOGIC ---
+        function calculateLive() {
+            const input = document.getElementById('liveInput').value.trim();
+            const resContainer = document.getElementById('liveResults');
+
+            if (!input) {
+                resContainer.style.display = 'none';
+                return;
+            }
+
+            // Allow numbers, operators, spaces
+            if (!/^[0-9+\-*/.()\s]+$/.test(input)) return;
+
+            try {
+                // Safe math evaluation
+                const sum = new Function('return ' + input)();
+
+                if (!isFinite(sum) || isNaN(sum)) return;
+
+                const halfTax = (sum * 0.18) / 2;
+                const total = sum + halfTax + halfTax;
+
+                document.getElementById('resSum').innerText = formatNum(sum);
+                document.getElementById('resSplit1').innerText = formatNum(halfTax);
+                document.getElementById('resSplit2').innerText = formatNum(halfTax);
+                document.getElementById('resFinal').innerText = formatNum(total);
+
+                resContainer.style.display = 'block';
+            } catch (e) { }
+        }
+
+        // --- REVERSE AI LOGIC ---
+        function generateReverseAI() {
+            let grandTotalStr = document.getElementById('targetTotal').value.replace(/,/g, '');
+            let count = parseInt(document.getElementById('targetCount').value);
+            let grandTotal = parseFloat(grandTotalStr);
+
+            if (isNaN(grandTotal) || isNaN(count) || count <= 0) return;
+
+            // Base formula: Base = Grand / 1.18
+            let targetBaseSum = grandTotal / 1.18;
+            let generatedNumbers = [];
+            let currentSum = 0;
+            let roughAverage = targetBaseSum / count;
+
+            for (let i = 0; i < count; i++) {
+                let variance = (Math.random() * 1.0) + 0.5;
+                let cleanNum = Math.round((roughAverage * variance) / 10) * 10;
+                if (cleanNum <= 0) cleanNum = 10;
+                generatedNumbers.push(cleanNum);
+                currentSum += cleanNum;
+            }
+
+            // Balance the difference
+            let diff = targetBaseSum - currentSum;
+            while (Math.abs(diff) > 1) {
+                let idx = Math.floor(Math.random() * count);
+                let step = diff > 0 ? 10 : -10;
+                if (generatedNumbers[idx] + step > 0) {
+                    generatedNumbers[idx] += step;
+                    diff -= step;
+                }
+            }
+
+            // Display
+            const outputBox = document.getElementById('aiResultBox');
+            const outputText = document.getElementById('aiOutputText');
+
+            outputText.innerText = generatedNumbers.map(n =>
+                n.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 2 })
+            ).join(" , ");
+
+            outputBox.style.display = 'block';
+        }
+
+        function formatNum(n) {
+            return n.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+        }
+    </script>
+</body>
+
+</html>
