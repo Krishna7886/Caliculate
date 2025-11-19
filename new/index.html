@@ -1,0 +1,443 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Constrained List Calculator</title>
+    <style>
+        /* CSS - Clean & Professional */
+        body {
+            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            background-color: #f0f2f5;
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+        }
+
+        .container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+            width: 100%;
+            max-width: 1100px;
+            align-items: flex-start;
+        }
+
+        /* --- LEFT SIDE: TABLE --- */
+        .table-card {
+            flex: 2;
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
+            min-width: 350px;
+        }
+
+        .table-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+
+        h2 {
+            margin: 0;
+            color: #2c3e50;
+            font-size: 1.3rem;
+        }
+
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .data-table th {
+            text-align: left;
+            padding: 12px;
+            background-color: #f8f9fa;
+            color: #7f8c8d;
+            font-size: 0.9rem;
+            border-bottom: 2px solid #eee;
+        }
+
+        .data-table td {
+            padding: 8px;
+            border-bottom: 1px solid #f1f1f1;
+        }
+
+        .amount-input {
+            width: 100%;
+            padding: 10px;
+            border: 2px solid #e0e0e0;
+            border-radius: 6px;
+            font-size: 1rem;
+            font-weight: 600;
+            color: #2c3e50;
+            box-sizing: border-box;
+            outline: none;
+            transition: 0.2s;
+        }
+
+        .amount-input:focus {
+            border-color: #3498db;
+            background-color: #fdfdff;
+        }
+
+        .btn-del {
+            background: #e74c3c;
+            color: white;
+            border: none;
+            width: 32px;
+            height: 32px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 1.2rem;
+            line-height: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .btn-del:hover {
+            background: #c0392b;
+        }
+
+        .btn-add-row {
+            margin-top: 15px;
+            width: 100%;
+            padding: 12px;
+            background-color: #ecf0f1;
+            color: #2c3e50;
+            border: 2px dashed #bdc3c7;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: 0.2s;
+        }
+
+        .btn-add-row:hover {
+            background-color: #bdc3c7;
+            color: white;
+            border-style: solid;
+        }
+
+        /* --- RIGHT SIDE: CALCULATIONS --- */
+        .calc-card {
+            flex: 1;
+            background: white;
+            border-radius: 12px;
+            padding: 25px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
+            min-width: 300px;
+            position: sticky;
+            top: 20px;
+        }
+
+        .result-row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 12px;
+            color: #7f8c8d;
+            font-size: 0.95rem;
+        }
+
+        .grand-row {
+            border-top: 2px solid #2c3e50;
+            padding-top: 15px;
+            margin-top: 15px;
+            font-weight: 800;
+            font-size: 1.4rem;
+            color: #2c3e50;
+        }
+
+        .val {
+            font-weight: bold;
+        }
+
+        /* AI Generator Box */
+        .ai-box {
+            background-color: #eef2f7;
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 30px;
+            border: 1px solid #d5dbdb;
+        }
+
+        .ai-label {
+            font-size: 0.8rem;
+            text-transform: uppercase;
+            color: #3498db;
+            font-weight: bold;
+            letter-spacing: 1px;
+            margin-bottom: 10px;
+            display: block;
+        }
+
+        .ai-input-group {
+            display: flex;
+            gap: 8px;
+        }
+
+        .ai-input-group input {
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 6px;
+            width: 100%;
+        }
+
+        .btn-go {
+            background-color: #3498db;
+            color: white;
+            border: none;
+            padding: 0 20px;
+            border-radius: 6px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        .btn-go:hover {
+            background-color: #2980b9;
+        }
+
+        .range-info {
+            font-size: 0.75rem;
+            color: #e67e22;
+            margin-top: 5px;
+            font-weight: bold;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <!-- LEFT: TABLE -->
+        <div class="table-card">
+            <div class="table-header">
+                <h2>Item List</h2>
+                <button onclick="clearTable()"
+                    style="background:none; border:none; color:#e74c3c; cursor:pointer; font-size:0.9rem; text-decoration:underline;">Clear
+                    All</button>
+            </div>
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th style="width: 50px;">#</th>
+                        <th>Amount</th>
+                        <th style="width: 50px; text-align:center;">Action</th>
+                    </tr>
+                </thead>
+                <tbody id="tableBody">
+                    <!-- Rows generate here -->
+                </tbody>
+            </table>
+            <button class="btn-add-row" onclick="addRow()">+ Add New Row</button>
+        </div>
+        <!-- RIGHT: RESULTS & AI -->
+        <div class="calc-card">
+            <h2 style="margin-bottom: 20px;">Summary</h2>
+            <div class="result-row">
+                <span>Total Sum</span>
+                <span class="val" id="resSum">0.00</span>
+            </div>
+            <div class="result-row" style="color: #e67e22;">
+                <span>18% Split (First Half)</span>
+                <span class="val" id="resSplit1">0.00</span>
+            </div>
+            <div class="result-row" style="color: #e67e22;">
+                <span>18% Split (Second Half)</span>
+                <span class="val" id="resSplit2">0.00</span>
+            </div>
+            <div class="result-row grand-row">
+                <span>Grand Total</span>
+                <span class="val" id="resFinal">0.00</span>
+            </div>
+            <!-- AI GENERATOR -->
+            <div class="ai-box">
+                <span class="ai-label">Reverse AI Generator</span>
+                <p style="font-size:0.8rem; color:#666; margin-top:0;"> Generates items strictly between
+                    <strong>850</strong> and <strong>4500</strong>. </p>
+                <div class="ai-input-group">
+                    <input type="number" id="aiTotal" placeholder="Grand Total">
+                    <input type="number" id="aiCount" placeholder="Qty" style="max-width: 60px;" value="5">
+                    <button class="btn-go" onclick="runAI()">GO</button>
+                </div>
+                <div class="range-info" id="aiStatus"></div>
+            </div>
+        </div>
+    </div>
+    <script>
+        // CONFIGURATION
+        const MIN_LIMIT = 850;
+        const MAX_LIMIT = 4500;
+
+        // 1. INITIALIZE
+        document.addEventListener('DOMContentLoaded', () => {
+            addRow();
+        });
+
+        // 2. ADD ROW FUNCTION
+        function addRow(value = '') {
+            const tbody = document.getElementById('tableBody');
+            const rowCount = tbody.rows.length + 1;
+
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+            <td class="row-index" style="color:#888; font-weight:bold;">${rowCount}</td>
+            <td>
+                <input type="number" class="amount-input" 
+                       value="${value}" 
+                       placeholder="0.00" 
+                       oninput="calculate()" 
+                       onkeydown="handleEnter(event)">
+            </td>
+            <td style="text-align:center;">
+                <button class="btn-del" onclick="deleteRow(this)">×</button>
+            </td>
+        `;
+            tbody.appendChild(tr);
+
+            if (value === '') {
+                tr.querySelector('input').focus();
+            }
+        }
+
+        // 3. DELETE ROW FUNCTION
+        function deleteRow(btn) {
+            const row = btn.closest('tr');
+            row.remove();
+            updateIndexes();
+            calculate();
+        }
+
+        function updateIndexes() {
+            const rows = document.querySelectorAll('#tableBody tr');
+            rows.forEach((row, index) => {
+                row.querySelector('.row-index').innerText = index + 1;
+            });
+        }
+
+        function clearTable() {
+            document.getElementById('tableBody').innerHTML = '';
+            addRow();
+            calculate();
+        }
+
+        function handleEnter(e) {
+            if (e.key === 'Enter') {
+                addRow();
+            }
+        }
+
+        // 4. CALCULATION LOGIC
+        function calculate() {
+            const inputs = document.querySelectorAll('.amount-input');
+            let sum = 0;
+
+            inputs.forEach(inp => {
+                let v = parseFloat(inp.value);
+                if (!isNaN(v)) sum += v;
+            });
+
+            const split = (sum * 0.18) / 2;
+            const final = sum + split + split;
+
+            document.getElementById('resSum').innerText = fmt(sum);
+            document.getElementById('resSplit1').innerText = fmt(split);
+            document.getElementById('resSplit2').innerText = fmt(split);
+            document.getElementById('resFinal').innerText = fmt(final);
+        }
+
+        function fmt(n) {
+            return n.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+        }
+
+        // 5. NEW AI LOGIC (Range Restricted)
+        function runAI() {
+            const totalVal = parseFloat(document.getElementById('aiTotal').value);
+            const countVal = parseInt(document.getElementById('aiCount').value);
+            const status = document.getElementById('aiStatus');
+
+            if (isNaN(totalVal) || isNaN(countVal) || countVal <= 0) {
+                alert("Please enter valid Total and Quantity");
+                return;
+            }
+
+            // 1. Determine Target Base Sum
+            // Formula: Base = Grand / 1.18
+            const targetBase = totalVal / 1.18;
+
+            // 2. Feasibility Check
+            const minPossible = MIN_LIMIT * countVal;
+            const maxPossible = MAX_LIMIT * countVal;
+
+            if (targetBase < minPossible) {
+                status.innerText = `Error: Total too low! Minimum possible base sum for ${countVal} items is ${fmt(minPossible)} (Grand Total ≈ ${fmt(minPossible * 1.18)})`;
+                status.style.color = "#e74c3c";
+                return;
+            }
+            if (targetBase > maxPossible) {
+                status.innerText = `Error: Total too high! Maximum possible base sum for ${countVal} items is ${fmt(maxPossible)} (Grand Total ≈ ${fmt(maxPossible * 1.18)})`;
+                status.style.color = "#e74c3c";
+                return;
+            }
+
+            status.innerText = ""; // Clear errors
+
+            // 3. Generate Initial List (Distributed Random within Range)
+            let list = [];
+            let currentSum = 0;
+
+            for (let i = 0; i < countVal; i++) {
+                // Generate random number between MIN and MAX
+                // Use simple randomization first, we will balance later
+                let rand = Math.floor(Math.random() * (MAX_LIMIT - MIN_LIMIT + 1)) + MIN_LIMIT;
+
+                // Round to nearest 10 for cleaner look
+                rand = Math.round(rand / 10) * 10;
+
+                list.push(rand);
+                currentSum += rand;
+            }
+
+            // 4. Balance the numbers to hit targetBase exactly
+            let diff = targetBase - currentSum;
+            let safety = 0; // Prevent infinite loops
+
+            while (Math.abs(diff) > 5 && safety < 5000) {
+                // Pick a random item to adjust
+                let idx = Math.floor(Math.random() * countVal);
+
+                // Determine step direction (Add or Subtract)
+                // Use step of 10 to keep numbers clean
+                let step = diff > 0 ? 10 : -10;
+
+                let potentialValue = list[idx] + step;
+
+                // CRITICAL: Only adjust if the result stays within 850-4500
+                if (potentialValue >= MIN_LIMIT && potentialValue <= MAX_LIMIT) {
+                    list[idx] = potentialValue;
+                    diff -= step;
+                }
+
+                safety++;
+            }
+
+            // 5. Populate Table
+            const tbody = document.getElementById('tableBody');
+            tbody.innerHTML = '';
+
+            list.forEach(num => {
+                addRow(num);
+            });
+
+            calculate();
+            status.innerText = "Generated successfully within range.";
+            status.style.color = "#27ae60";
+        }
+
+    </script>
+</body>
+
+</html>
