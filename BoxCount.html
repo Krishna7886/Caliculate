@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Manual Box Counter by Row</title>
+  <style>
+    :root {
+      --primary: #2563eb;
+      --bg: #f8fafc;
+      --card: #ffffff;
+      --text: #0f172a;
+      --border: #e2e8f0;
+      --danger: #ef4444;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background-color: var(--bg);
+      color: var(--text);
+      max-width: 650px;
+      margin: 40px auto;
+      padding: 0 20px;
+    }
+
+    .container {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 24px;
+      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+    }
+
+    h2 {
+      margin-top: 0;
+      margin-bottom: 20px;
+    }
+
+    .row-list {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      margin-bottom: 20px;
+    }
+
+    .row-item {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 10px;
+      background: #f1f5f9;
+      border-radius: 8px;
+    }
+
+    .row-label {
+      font-weight: 600;
+      min-width: 70px;
+    }
+
+    input[type="number"] {
+      flex: 1;
+      padding: 8px 12px;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      font-size: 16px;
+    }
+
+    .btn {
+      padding: 8px 16px;
+      border: none;
+      border-radius: 6px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+
+    .btn-add {
+      background: var(--primary);
+      color: white;
+      width: 100%;
+      padding: 10px;
+      margin-bottom: 20px;
+    }
+
+    .btn-add:hover {
+      background: #1d4ed8;
+    }
+
+    .btn-delete {
+      background: transparent;
+      color: var(--danger);
+      font-size: 18px;
+      padding: 4px 10px;
+    }
+
+    .btn-delete:hover {
+      background: #fee2e2;
+    }
+
+    .summary-card {
+      background: #eff6ff;
+      border: 1px solid #bfdbfe;
+      border-radius: 8px;
+      padding: 16px;
+    }
+
+    .summary-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 18px;
+      font-weight: bold;
+    }
+
+    .total-value {
+      color: var(--primary);
+      font-size: 24px;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="container">
+    <h2>Box Counter by Row</h2>
+
+    <div class="row-list" id="rowContainer">
+      <!-- Rows will be dynamically rendered here -->
+    </div>
+
+    <button class="btn btn-add" onclick="addRow()">+ Add New Row</button>
+
+    <div class="summary-card">
+      <div class="summary-row">
+        <span>Total Boxes Counted:</span>
+        <span class="total-value" id="totalCount">0</span>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // State: stores the box count for each row index
+    let rowData = [0]; // Starts with 1 empty row
+
+    function renderRows() {
+      const container = document.getElementById('rowContainer');
+      container.innerHTML = '';
+
+      rowData.forEach((count, index) => {
+        const rowDiv = document.createElement('div');
+        rowDiv.className = 'row-item';
+
+        rowDiv.innerHTML = `
+          <span class="row-label">Row ${index + 1}:</span>
+          <input 
+            type="number" 
+            min="0" 
+            placeholder="Enter box count" 
+            value="${count === 0 ? '' : count}" 
+            oninput="updateRow(${index}, this.value)"
+          />
+          ${
+            rowData.length > 1 
+              ? `<button class="btn btn-delete" onclick="deleteRow(${index})">✕</button>` 
+              : ''
+          }
+        `;
+
+        container.appendChild(rowDiv);
+      });
+
+      calculateTotal();
+    }
+
+    function updateRow(index, value) {
+      // Store the numeric value in state
+      rowData[index] = parseInt(value) || 0;
+      calculateTotal();
+    }
+
+    function addRow() {
+      rowData.push(0);
+      renderRows();
+      
+      // Auto-focus the newly created input
+      const inputs = document.querySelectorAll('input[type="number"]');
+      inputs[inputs.length - 1].focus();
+    }
+
+    function deleteRow(index) {
+      rowData.splice(index, 1);
+      renderRows();
+    }
+
+    function calculateTotal() {
+      const total = rowData.reduce((sum, current) => sum + current, 0);
+      document.getElementById('totalCount').innerText = total;
+    }
+
+    // Initial render on load
+    renderRows();
+  </script>
+
+</body>
+  </html>
+  
