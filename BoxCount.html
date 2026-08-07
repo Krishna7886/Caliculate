@@ -3,24 +3,25 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Manual Box Counter by Row</title>
+  <title>Bundle & Row Box Counter</title>
   <style>
     :root {
       --primary: #2563eb;
       --bg: #f8fafc;
       --card: #ffffff;
       --text: #0f172a;
-      --border: #e2e8f0;
+      --border: #cbd5e1;
       --danger: #ef4444;
+      --bundle-bg: #f1f5f9;
     }
 
     body {
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
       background-color: var(--bg);
       color: var(--text);
-      max-width: 650px;
-      margin: 40px auto;
-      padding: 0 20px;
+      max-width: 700px;
+      margin: 30px auto;
+      padding: 0 15px;
     }
 
     .container {
@@ -36,25 +37,49 @@
       margin-bottom: 20px;
     }
 
+    .bundle-card {
+      background: var(--bundle-bg);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 16px;
+      margin-bottom: 20px;
+    }
+
+    .bundle-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 12px;
+      border-bottom: 2px solid var(--border);
+      padding-bottom: 8px;
+    }
+
+    .bundle-title {
+      font-size: 18px;
+      font-weight: 700;
+      color: #1e293b;
+    }
+
     .row-list {
       display: flex;
       flex-direction: column;
-      gap: 12px;
-      margin-bottom: 20px;
+      gap: 10px;
+      margin-bottom: 12px;
     }
 
     .row-item {
       display: flex;
       align-items: center;
-      gap: 12px;
-      padding: 10px;
-      background: #f1f5f9;
-      border-radius: 8px;
+      gap: 10px;
+      background: #ffffff;
+      padding: 8px 12px;
+      border-radius: 6px;
+      border: 1px solid var(--border);
     }
 
     .row-label {
       font-weight: 600;
-      min-width: 70px;
+      min-width: 60px;
     }
 
     input[type="number"] {
@@ -62,144 +87,189 @@
       padding: 8px 12px;
       border: 1px solid var(--border);
       border-radius: 6px;
-      font-size: 16px;
+      font-size: 15px;
     }
 
     .btn {
-      padding: 8px 16px;
+      padding: 6px 12px;
       border: none;
       border-radius: 6px;
       font-weight: 500;
       cursor: pointer;
+      font-size: 14px;
       transition: background 0.2s;
     }
 
-    .btn-add {
+    .btn-add-row {
+      background: #e2e8f0;
+      color: #334155;
+    }
+
+    .btn-add-row:hover {
+      background: #cbd5e1;
+    }
+
+    .btn-add-bundle {
       background: var(--primary);
       color: white;
       width: 100%;
-      padding: 10px;
+      padding: 12px;
+      font-size: 16px;
       margin-bottom: 20px;
     }
 
-    .btn-add:hover {
+    .btn-add-bundle:hover {
       background: #1d4ed8;
     }
 
     .btn-delete {
       background: transparent;
       color: var(--danger);
-      font-size: 18px;
-      padding: 4px 10px;
+      font-size: 16px;
+      padding: 4px 8px;
     }
 
     .btn-delete:hover {
       background: #fee2e2;
     }
 
-    .summary-card {
-      background: #eff6ff;
-      border: 1px solid #bfdbfe;
-      border-radius: 8px;
-      padding: 16px;
-    }
-
-    .summary-row {
+    .bundle-footer {
       display: flex;
       justify-content: space-between;
       align-items: center;
-      font-size: 18px;
-      font-weight: bold;
+      margin-top: 12px;
+      padding-top: 8px;
     }
 
-    .total-value {
-      color: var(--primary);
-      font-size: 24px;
+    .bundle-sum {
+      font-weight: 700;
+      font-size: 16px;
+      color: #0f172a;
+    }
+
+    .grand-total-card {
+      background: #1e293b;
+      color: white;
+      border-radius: 10px;
+      padding: 20px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .grand-total-label {
+      font-size: 20px;
+      font-weight: 600;
+    }
+
+    .grand-total-value {
+      font-size: 32px;
+      font-weight: 800;
+      color: #38bdf8;
     }
   </style>
 </head>
 <body>
 
   <div class="container">
-    <h2>Box Counter by Row</h2>
+    <h2>Bundle & Row Box Counter</h2>
 
-    <div class="row-list" id="rowContainer">
-      <!-- Rows will be dynamically rendered here -->
+    <div id="bundleContainer">
+      <!-- Bundles will render dynamically here -->
     </div>
 
-    <button class="btn btn-add" onclick="addRow()">+ Add New Row</button>
+    <button class="btn btn-add-bundle" onclick="addBundle()">+ Add New Bundle</button>
 
-    <div class="summary-card">
-      <div class="summary-row">
-        <span>Total Boxes Counted:</span>
-        <span class="total-value" id="totalCount">0</span>
-      </div>
+    <div class="grand-total-card">
+      <span class="grand-total-label">Grand Total Boxes:</span>
+      <span class="grand-total-value" id="grandTotal">0</span>
     </div>
   </div>
 
   <script>
-    // State: stores the box count for each row index
-    let rowData = [0]; // Starts with 1 empty row
+    // State layout: array of bundles, each bundle contains an array of row counts
+    let bundles = [
+      [0] // Starts with Bundle 1 containing 1 Row
+    ];
 
-    function renderRows() {
-      const container = document.getElementById('rowContainer');
+    function render() {
+      const container = document.getElementById('bundleContainer');
       container.innerHTML = '';
 
-      rowData.forEach((count, index) => {
-        const rowDiv = document.createElement('div');
-        rowDiv.className = 'row-item';
+      let grandTotal = 0;
 
-        rowDiv.innerHTML = `
-          <span class="row-label">Row ${index + 1}:</span>
-          <input 
-            type="number" 
-            min="0" 
-            placeholder="Enter box count" 
-            value="${count === 0 ? '' : count}" 
-            oninput="updateRow(${index}, this.value)"
-          />
-          ${
-            rowData.length > 1 
-              ? `<button class="btn btn-delete" onclick="deleteRow(${index})">✕</button>` 
-              : ''
-          }
+      bundles.forEach((rows, bundleIdx) => {
+        // Calculate subtotal for this bundle
+        const bundleSum = rows.reduce((acc, curr) => acc + curr, 0);
+        grandTotal += bundleSum;
+
+        const bundleDiv = document.createElement('div');
+        bundleDiv.className = 'bundle-card';
+
+        let rowsHtml = rows.map((count, rowIdx) => `
+          <div class="row-item">
+            <span class="row-label">Row ${rowIdx + 1}:</span>
+            <input 
+              type="number" 
+              min="0" 
+              placeholder="Enter box count" 
+              value="${count === 0 ? '' : count}" 
+              oninput="updateRow(${bundleIdx}, ${rowIdx}, this.value)"
+            />
+            ${rows.length > 1 ? `<button class="btn btn-delete" onclick="deleteRow(${bundleIdx}, ${rowIdx})">✕</button>` : ''}
+          </div>
+        `).join('');
+
+        bundleDiv.innerHTML = `
+          <div class="bundle-header">
+            <span class="bundle-title">Bundle ${bundleIdx + 1}</span>
+            ${bundles.length > 1 ? `<button class="btn btn-delete" onclick="deleteBundle(${bundleIdx})">Delete Bundle</button>` : ''}
+          </div>
+          
+          <div class="row-list">
+            ${rowsHtml}
+          </div>
+
+          <div class="bundle-footer">
+            <button class="btn btn-add-row" onclick="addRow(${bundleIdx})">+ Add Row</button>
+            <span class="bundle-sum">Bundle ${bundleIdx + 1} Total: ${bundleSum}</span>
+          </div>
         `;
 
-        container.appendChild(rowDiv);
+        container.appendChild(bundleDiv);
       });
 
-      calculateTotal();
+      document.getElementById('grandTotal').innerText = grandTotal;
     }
 
-    function updateRow(index, value) {
-      // Store the numeric value in state
-      rowData[index] = parseInt(value) || 0;
-      calculateTotal();
+    function updateRow(bundleIdx, rowIdx, value) {
+      bundles[bundleIdx][rowIdx] = parseInt(value) || 0;
+      render();
     }
 
-    function addRow() {
-      rowData.push(0);
-      renderRows();
-      
-      // Auto-focus the newly created input
-      const inputs = document.querySelectorAll('input[type="number"]');
-      inputs[inputs.length - 1].focus();
+    function addRow(bundleIdx) {
+      bundles[bundleIdx].push(0);
+      render();
     }
 
-    function deleteRow(index) {
-      rowData.splice(index, 1);
-      renderRows();
+    function deleteRow(bundleIdx, rowIdx) {
+      bundles[bundleIdx].splice(rowIdx, 1);
+      render();
     }
 
-    function calculateTotal() {
-      const total = rowData.reduce((sum, current) => sum + current, 0);
-      document.getElementById('totalCount').innerText = total;
+    function addBundle() {
+      bundles.push([0]);
+      render();
     }
 
-    // Initial render on load
-    renderRows();
+    function deleteBundle(bundleIdx) {
+      bundles.splice(bundleIdx, 1);
+      render();
+    }
+
+    // Initial render
+    render();
   </script>
 
 </body>
-  </html>
-  
+</html>
