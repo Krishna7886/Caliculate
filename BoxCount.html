@@ -2,7 +2,8 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <!-- Interactive-widget prevents keyboard overlay issues on modern browsers -->
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, interactive-widget=resizes-content">
   <title>Bundle & Row Box Counter</title>
   <style>
     :root {
@@ -20,15 +21,15 @@
       background-color: var(--bg);
       color: var(--text);
       max-width: 700px;
-      margin: 30px auto;
-      padding: 0 15px;
+      margin: 0 auto;
+      padding: 20px 15px 120px 15px; /* Bottom padding keeps content clear of the fixed grand total bar */
     }
 
     .container {
       background: var(--card);
       border: 1px solid var(--border);
       border-radius: 12px;
-      padding: 24px;
+      padding: 20px;
       box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
     }
 
@@ -84,14 +85,14 @@
 
     input[type="number"] {
       flex: 1;
-      padding: 8px 12px;
+      padding: 10px 12px; /* Bigger touch target */
       border: 1px solid var(--border);
       border-radius: 6px;
-      font-size: 15px;
+      font-size: 16px; /* Prevents auto-zoom on iOS safari */
     }
 
     .btn {
-      padding: 6px 12px;
+      padding: 8px 12px;
       border: none;
       border-radius: 6px;
       font-weight: 500;
@@ -147,23 +148,33 @@
       color: #0f172a;
     }
 
+    /* Fixed Grand Total at the bottom so it never overlaps active input rows */
     .grand-total-card {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      max-width: 700px;
+      margin: 0 auto;
       background: #1e293b;
       color: white;
-      border-radius: 10px;
-      padding: 20px;
+      padding: 16px 24px;
       display: flex;
       justify-content: space-between;
       align-items: center;
+      box-shadow: 0 -4px 12px rgba(0, 0, 0, 0.15);
+      z-index: 100;
+      border-top-left-radius: 12px;
+      border-top-right-radius: 12px;
     }
 
     .grand-total-label {
-      font-size: 20px;
+      font-size: 18px;
       font-weight: 600;
     }
 
     .grand-total-value {
-      font-size: 32px;
+      font-size: 28px;
       font-weight: 800;
       color: #38bdf8;
     }
@@ -179,32 +190,28 @@
     </div>
 
     <button class="btn btn-add-bundle" onclick="addBundle()">+ Add New Bundle</button>
+  </div>
 
-    <div class="grand-total-card">
-      <span class="grand-total-label">Grand Total Boxes:</span>
-      <span class="grand-total-value" id="grandTotal">0</span>
-    </div>
+  <!-- Grand Total Bar fixed to bottom -->
+  <div class="grand-total-card">
+    <span class="grand-total-label">Grand Total Boxes:</span>
+    <span class="grand-total-value" id="grandTotal">0</span>
   </div>
 
   <script>
-    // State layout: array of bundles, each bundle contains an array of row counts
     let bundles = [
       [0] // Starts with Bundle 1 containing 1 Row
     ];
 
-    function render() {
+    // Main render function: ONLY used when adding/deleting rows or bundles
+    function renderStructure() {
       const container = document.getElementById('bundleContainer');
       container.innerHTML = '';
 
-      let grandTotal = 0;
-
       bundles.forEach((rows, bundleIdx) => {
-        // Calculate subtotal for this bundle
-        const bundleSum = rows.reduce((acc, curr) => acc + curr, 0);
-        grandTotal += bundleSum;
-
         const bundleDiv = document.createElement('div');
         bundleDiv.className = 'bundle-card';
+        bundleDiv.dataset.bundle = bundleIdx;
 
         let rowsHtml = rows.map((count, rowIdx) => `
           <div class="row-item">
@@ -212,9 +219,10 @@
             <input 
               type="number" 
               min="0" 
-              placeholder="Enter box count" 
+              placeholder="0" 
               value="${count === 0 ? '' : count}" 
-              oninput="updateRow(${bundleIdx}, ${rowIdx}, this.value)"
+              oninput="updateRowValue(${bundleIdx}, ${rowIdx}, this.value)"
+              onfocus="scrollIntoViewIfNeeded(this)"
             />
             ${rows.length > 1 ? `<button class="btn btn-delete" onclick="deleteRow(${bundleIdx}, ${rowIdx})">✕</button>` : ''}
           </div>
@@ -232,43 +240,68 @@
 
           <div class="bundle-footer">
             <button class="btn btn-add-row" onclick="addRow(${bundleIdx})">+ Add Row</button>
-            <span class="bundle-sum">Bundle ${bundleIdx + 1} Total: ${bundleSum}</span>
+            <span class="bundle-sum">Bundle ${bundleIdx + 1} Total: <span id="bundle-sum-${bundleIdx}">0</span></span>
           </div>
         `;
 
         container.appendChild(bundleDiv);
       });
 
-      document.getElementById('grandTotal').innerText = grandTotal;
+      calculateTotalsOnly();
     }
 
-    function updateRow(bundleIdx, rowIdx, value) {
+    // Direct data updates: Updates internal state and recalculates totals WITHOUT re-rendering input elements
+    function updateRowValue(bundleIdx, rowIdx, value) {
       bundles[bundleIdx][rowIdx] = parseInt(value) || 0;
-      render();
+      calculateTotalsOnly();
+    }
+
+    // Calculates sums and updates total text directly, preserving input focus
+    function calculateTotalsOnly() {
+      let grandTotal = 0;
+
+      bundles.forEach((rows, bundleIdx) => {
+        const bundleSum = rows.reduce((acc, curr) => acc + curr, 0);
+        grandTotal += bundleSum;
+
+        const sumElement = document.getElementById(`bundle-sum-${bundleIdx}`);
+        if (sumElement) {
+          sumElement.innerText = bundleSum;
+        }
+      });
+
+      document.getElementById('grandTotal').innerText = grandTotal;
     }
 
     function addRow(bundleIdx) {
       bundles[bundleIdx].push(0);
-      render();
+      renderStructure();
     }
 
     function deleteRow(bundleIdx, rowIdx) {
       bundles[bundleIdx].splice(rowIdx, 1);
-      render();
+      renderStructure();
     }
 
     function addBundle() {
       bundles.push([0]);
-      render();
+      renderStructure();
     }
 
     function deleteBundle(bundleIdx) {
       bundles.splice(bundleIdx, 1);
-      render();
+      renderStructure();
+    }
+
+    // Scroll active input into view above the grand total bottom bar
+    function scrollIntoViewIfNeeded(element) {
+      setTimeout(() => {
+        element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }, 300);
     }
 
     // Initial render
-    render();
+    renderStructure();
   </script>
 
 </body>
